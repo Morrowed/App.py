@@ -14,12 +14,11 @@ st.title("Household Retirement Monte Carlo Simulator")
 st.caption("Stress-test your joint retirement readiness across thousands of randomized market sequences.")
 
 today = date.today()
-# Allow dates all the way back to 1920 for birthdates
 MIN_ALLOWED_DATE = date(1920, 1, 1)
 MAX_ALLOWED_DATE = date(2100, 12, 31)
 
 # =========================================================
-# SIDEBAR: USER INPUTS (BLANK DEFAULTS)
+# SIDEBAR: USER INPUTS
 # =========================================================
 st.sidebar.header("Partner 1")
 p1_dob = st.sidebar.date_input(
@@ -42,6 +41,20 @@ p1_401k = st.sidebar.number_input("Partner 1 401(k) ($)", min_value=0.0, value=0
 p1_ira = st.sidebar.number_input("Partner 1 Traditional IRA ($)", min_value=0.0, value=0.0, step=5000.0)
 p1_roth = st.sidebar.number_input("Partner 1 Roth Accounts ($)", min_value=0.0, value=0.0, step=5000.0)
 p1_other = st.sidebar.number_input("Partner 1 Other / Taxable ($)", min_value=0.0, value=0.0, step=5000.0)
+
+st.sidebar.subheader("Partner 1 Ongoing Contributions")
+p1_salary = st.sidebar.number_input("Partner 1 Annual Salary ($)", min_value=0.0, value=0.0, step=5000.0)
+p1_401k_contrib_pct = st.sidebar.slider("Partner 1 401(k) Contribution (% of salary)", min_value=0.0, max_value=50.0, value=0.0, step=0.5)
+p1_match_pct = st.sidebar.slider("Partner 1 Employer 401(k) Match (% of salary matched dollar-for-dollar)", min_value=0.0, max_value=20.0, value=0.0, step=0.5)
+p1_ira_monthly = st.sidebar.number_input("Partner 1 IRA Monthly Contrib ($)", min_value=0.0, value=0.0, step=50.0)
+p1_roth_monthly = st.sidebar.number_input("Partner 1 Roth Monthly Contrib ($)", min_value=0.0, value=0.0, step=50.0)
+p1_other_monthly = st.sidebar.number_input("Partner 1 Taxable/Other Monthly Contrib ($)", min_value=0.0, value=0.0, step=50.0)
+
+# Calculate Partner 1 annual ongoing savings
+p1_effective_match = min(p1_401k_contrib_pct, p1_match_pct) / 100.0
+p1_401k_total_annual = p1_salary * ((p1_401k_contrib_pct / 100.0) + p1_effective_match)
+p1_other_annual_contrib = (p1_ira_monthly + p1_roth_monthly + p1_other_monthly) * 12.0
+p1_total_annual_contrib = p1_401k_total_annual + p1_other_annual_contrib
 
 st.sidebar.markdown("---")
 st.sidebar.header("Partner 2")
@@ -66,10 +79,24 @@ p2_ira = st.sidebar.number_input("Partner 2 Traditional IRA ($)", min_value=0.0,
 p2_roth = st.sidebar.number_input("Partner 2 Roth Accounts ($)", min_value=0.0, value=0.0, step=5000.0)
 p2_other = st.sidebar.number_input("Partner 2 Other / Taxable ($)", min_value=0.0, value=0.0, step=5000.0)
 
+st.sidebar.subheader("Partner 2 Ongoing Contributions")
+p2_salary = st.sidebar.number_input("Partner 2 Annual Salary ($)", min_value=0.0, value=0.0, step=5000.0)
+p2_401k_contrib_pct = st.sidebar.slider("Partner 2 401(k) Contribution (% of salary)", min_value=0.0, max_value=50.0, value=0.0, step=0.5)
+p2_match_pct = st.sidebar.slider("Partner 2 Employer 401(k) Match (% of salary matched dollar-for-dollar)", min_value=0.0, max_value=20.0, value=0.0, step=0.5)
+p2_ira_monthly = st.sidebar.number_input("Partner 2 IRA Monthly Contrib ($)", min_value=0.0, value=0.0, step=50.0)
+p2_roth_monthly = st.sidebar.number_input("Partner 2 Roth Monthly Contrib ($)", min_value=0.0, value=0.0, step=50.0)
+p2_other_monthly = st.sidebar.number_input("Partner 2 Taxable/Other Monthly Contrib ($)", min_value=0.0, value=0.0, step=50.0)
+
+# Calculate Partner 2 annual ongoing savings
+p2_effective_match = min(p2_401k_contrib_pct, p2_match_pct) / 100.0
+p2_401k_total_annual = p2_salary * ((p2_401k_contrib_pct / 100.0) + p2_effective_match)
+p2_other_annual_contrib = (p2_ira_monthly + p2_roth_monthly + p2_other_monthly) * 12.0
+p2_total_annual_contrib = p2_401k_total_annual + p2_other_annual_contrib
+
 st.sidebar.markdown("---")
 st.sidebar.header("Household & Assumptions")
 joint_cash = st.sidebar.number_input("Joint Cash / Reserves ($)", min_value=0.0, value=0.0, step=5000.0)
-annual_spending = st.sidebar.number_input("Target Annual Spending ($)", min_value=0.0, value=0.0, step=1000.0)
+annual_spending = st.sidebar.number_input("Target Annual Spending in Retirement ($)", min_value=0.0, value=0.0, step=1000.0)
 
 expected_return = st.sidebar.slider("Expected Nominal Return (%)", min_value=1.0, max_value=15.0, value=7.0, step=0.25) / 100.0
 volatility = st.sidebar.slider("Market Volatility / StDev (%)", min_value=1.0, max_value=25.0, value=12.0, step=0.5) / 100.0
@@ -94,13 +121,13 @@ total_portfolio = (
     joint_cash
 )
 
+total_annual_savings = p1_total_annual_contrib + p2_total_annual_contrib
 p1_ss_annual = p1_ss_monthly * 12.0
 p2_ss_annual = p2_ss_monthly * 12.0
 
 SIM_YEARS = 35
 
-# Gracefully handle the start screen before the user has entered data
-if total_portfolio == 0 and annual_spending == 0:
+if total_portfolio == 0 and annual_spending == 0 and total_annual_savings == 0:
     st.info("👈 Open the sidebar menu on the left and enter your details to start the simulation.")
     st.stop()
 
@@ -115,9 +142,16 @@ for sim in range(num_simulations):
     
     for t in range(SIM_YEARS):
         inflation_factor = (1 + inflation_rate) ** t
+        
+        # 1. Add active contributions (stops when each partner hits their retirement date)
+        p1_inflow = p1_total_annual_contrib if t < p1_retire_years else 0.0
+        p2_inflow = p2_total_annual_contrib if t < p2_retire_years else 0.0
+        balance += (p1_inflow + p2_inflow)
+        
+        # 2. Apply annual investment return
         balance *= (1 + annual_returns[t])
         
-        # Withdrawals begin once either partner hits their target date
+        # 3. Apply retirement withdrawals (begins when either partner retires)
         if t >= min(p1_retire_years, p2_retire_years):
             spending = annual_spending * inflation_factor
             p1_ss = (p1_ss_annual * inflation_factor) if t >= p1_ss_years else 0.0
@@ -140,19 +174,19 @@ success_rate = (success_count / num_simulations) * 100
 # =========================================================
 # DASHBOARD DISPLAY
 # =========================================================
-col1, col2, col3 = st.columns(3)
-col1.metric("Total Starting Portfolio", f"${total_portfolio:,.0f}")
-col2.metric(
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("Starting Portfolio", f"${total_portfolio:,.0f}")
+col2.metric("Current Annual Savings", f"${total_annual_savings:,.0f}/yr")
+col3.metric(
     "Probability of Success",
     f"{success_rate:.1f}%",
     delta="Strong" if success_rate >= 85 else ("Moderate" if success_rate >= 70 else "At Risk"),
     delta_color="normal" if success_rate >= 85 else "inverse"
 )
-col3.metric("Combined Annual SS (Future)", f"${(p1_ss_annual + p2_ss_annual):,.0f}/yr")
+col4.metric("Combined Social Security", f"${(p1_ss_annual + p2_ss_annual):,.0f}/yr")
 
 st.markdown("---")
 
-# Trajectory Chart
 percentiles = [10, 25, 50, 75, 90]
 percentile_curves = np.percentile(portfolio_paths, percentiles, axis=1)
 years_index = np.arange(SIM_YEARS + 1)
@@ -171,7 +205,6 @@ fig.update_layout(
 )
 st.plotly_chart(fig, use_container_width=True)
 
-# Milestone Data Table
 milestone_years = sorted(list(set([
     0,
     int(round(p1_retire_years)),
