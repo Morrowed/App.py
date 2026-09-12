@@ -35,6 +35,7 @@ p1_retire_date = st.sidebar.date_input(
 )
 p1_ss_age = st.sidebar.number_input("Partner 1 SS Claim Age", min_value=62, max_value=70, value=67)
 p1_ss_monthly = st.sidebar.number_input("Partner 1 Monthly SS Benefit ($)", min_value=0.0, value=0.0, step=100.0)
+p1_plan_age = st.sidebar.number_input("Partner 1 Life Expectancy / End Age", min_value=65, max_value=110, value=90)
 
 st.sidebar.subheader("Partner 1 Balances")
 p1_401k = st.sidebar.number_input("Partner 1 401(k) ($)", min_value=0.0, value=0.0, step=5000.0)
@@ -45,12 +46,11 @@ p1_other = st.sidebar.number_input("Partner 1 Other / Taxable ($)", min_value=0.
 st.sidebar.subheader("Partner 1 Ongoing Contributions")
 p1_salary = st.sidebar.number_input("Partner 1 Annual Salary ($)", min_value=0.0, value=0.0, step=5000.0)
 p1_401k_contrib_pct = st.sidebar.slider("Partner 1 401(k) Contribution (% of salary)", min_value=0.0, max_value=50.0, value=0.0, step=0.5)
-p1_match_pct = st.sidebar.slider("Partner 1 Employer 401(k) Match (% of salary matched dollar-for-dollar)", min_value=0.0, max_value=20.0, value=0.0, step=0.5)
+p1_match_pct = st.sidebar.slider("Partner 1 Employer Match (% dollar-for-dollar)", min_value=0.0, max_value=20.0, value=0.0, step=0.5)
 p1_ira_monthly = st.sidebar.number_input("Partner 1 IRA Monthly Contrib ($)", min_value=0.0, value=0.0, step=50.0)
 p1_roth_monthly = st.sidebar.number_input("Partner 1 Roth Monthly Contrib ($)", min_value=0.0, value=0.0, step=50.0)
 p1_other_monthly = st.sidebar.number_input("Partner 1 Taxable/Other Monthly Contrib ($)", min_value=0.0, value=0.0, step=50.0)
 
-# Calculate Partner 1 annual ongoing savings
 p1_effective_match = min(p1_401k_contrib_pct, p1_match_pct) / 100.0
 p1_401k_total_annual = p1_salary * ((p1_401k_contrib_pct / 100.0) + p1_effective_match)
 p1_other_annual_contrib = (p1_ira_monthly + p1_roth_monthly + p1_other_monthly) * 12.0
@@ -72,6 +72,7 @@ p2_retire_date = st.sidebar.date_input(
 )
 p2_ss_age = st.sidebar.number_input("Partner 2 SS Claim Age", min_value=62, max_value=70, value=67)
 p2_ss_monthly = st.sidebar.number_input("Partner 2 Monthly SS Benefit ($)", min_value=0.0, value=0.0, step=100.0)
+p2_plan_age = st.sidebar.number_input("Partner 2 Life Expectancy / End Age", min_value=65, max_value=110, value=92)
 
 st.sidebar.subheader("Partner 2 Balances")
 p2_401k = st.sidebar.number_input("Partner 2 401(k) ($)", min_value=0.0, value=0.0, step=5000.0)
@@ -82,21 +83,21 @@ p2_other = st.sidebar.number_input("Partner 2 Other / Taxable ($)", min_value=0.
 st.sidebar.subheader("Partner 2 Ongoing Contributions")
 p2_salary = st.sidebar.number_input("Partner 2 Annual Salary ($)", min_value=0.0, value=0.0, step=5000.0)
 p2_401k_contrib_pct = st.sidebar.slider("Partner 2 401(k) Contribution (% of salary)", min_value=0.0, max_value=50.0, value=0.0, step=0.5)
-p2_match_pct = st.sidebar.slider("Partner 2 Employer 401(k) Match (% of salary matched dollar-for-dollar)", min_value=0.0, max_value=20.0, value=0.0, step=0.5)
+p2_match_pct = st.sidebar.slider("Partner 2 Employer Match (% dollar-for-dollar)", min_value=0.0, max_value=20.0, value=0.0, step=0.5)
 p2_ira_monthly = st.sidebar.number_input("Partner 2 IRA Monthly Contrib ($)", min_value=0.0, value=0.0, step=50.0)
 p2_roth_monthly = st.sidebar.number_input("Partner 2 Roth Monthly Contrib ($)", min_value=0.0, value=0.0, step=50.0)
 p2_other_monthly = st.sidebar.number_input("Partner 2 Taxable/Other Monthly Contrib ($)", min_value=0.0, value=0.0, step=50.0)
 
-# Calculate Partner 2 annual ongoing savings
 p2_effective_match = min(p2_401k_contrib_pct, p2_match_pct) / 100.0
 p2_401k_total_annual = p2_salary * ((p2_401k_contrib_pct / 100.0) + p2_effective_match)
 p2_other_annual_contrib = (p2_ira_monthly + p2_roth_monthly + p2_other_monthly) * 12.0
 p2_total_annual_contrib = p2_401k_total_annual + p2_other_annual_contrib
 
 st.sidebar.markdown("---")
-st.sidebar.header("Household & Assumptions")
+st.sidebar.header("Household & Longevity Assumptions")
 joint_cash = st.sidebar.number_input("Joint Cash / Reserves ($)", min_value=0.0, value=0.0, step=5000.0)
-annual_spending = st.sidebar.number_input("Target Annual Spending in Retirement ($)", min_value=0.0, value=0.0, step=1000.0)
+annual_spending = st.sidebar.number_input("Target Couple Spending in Retirement ($)", min_value=0.0, value=0.0, step=1000.0)
+survivor_spending_pct = st.sidebar.slider("Survivor Spending Adjustment (% of couple budget)", min_value=50, max_value=100, value=75, step=5) / 100.0
 
 expected_return = st.sidebar.slider("Expected Nominal Return (%)", min_value=1.0, max_value=15.0, value=7.0, step=0.25) / 100.0
 volatility = st.sidebar.slider("Market Volatility / StDev (%)", min_value=1.0, max_value=25.0, value=12.0, step=0.5) / 100.0
@@ -115,6 +116,12 @@ p2_retire_years = max(0.0, (p2_retire_date - today).days / 365.25)
 p1_ss_years = max(0.0, p1_ss_age - p1_current_age)
 p2_ss_years = max(0.0, p2_ss_age - p2_current_age)
 
+p1_years_to_end = max(1.0, float(p1_plan_age) - p1_current_age)
+p2_years_to_end = max(1.0, float(p2_plan_age) - p2_current_age)
+
+# Horizon runs until the longest-living partner passes
+sim_years = int(np.ceil(max(p1_years_to_end, p2_years_to_end)))
+
 total_portfolio = (
     p1_401k + p1_ira + p1_roth + p1_other +
     p2_401k + p2_ira + p2_roth + p2_other +
@@ -125,39 +132,58 @@ total_annual_savings = p1_total_annual_contrib + p2_total_annual_contrib
 p1_ss_annual = p1_ss_monthly * 12.0
 p2_ss_annual = p2_ss_monthly * 12.0
 
-SIM_YEARS = 35
-
 if total_portfolio == 0 and annual_spending == 0 and total_annual_savings == 0:
     st.info("👈 Open the sidebar menu on the left and enter your details to start the simulation.")
     st.stop()
 
 np.random.seed(42)
-portfolio_paths = np.zeros((SIM_YEARS + 1, num_simulations))
+portfolio_paths = np.zeros((sim_years + 1, num_simulations))
 portfolio_paths[0, :] = total_portfolio
 success_count = 0
 
 for sim in range(num_simulations):
     balance = total_portfolio
-    annual_returns = np.random.normal(expected_return, volatility, SIM_YEARS)
+    annual_returns = np.random.normal(expected_return, volatility, sim_years)
     
-    for t in range(SIM_YEARS):
+    for t in range(sim_years):
         inflation_factor = (1 + inflation_rate) ** t
         
-        # 1. Add active contributions (stops when each partner hits their retirement date)
-        p1_inflow = p1_total_annual_contrib if t < p1_retire_years else 0.0
-        p2_inflow = p2_total_annual_contrib if t < p2_retire_years else 0.0
+        # 1. Check partner vitality status
+        p1_alive = t < p1_years_to_end
+        p2_alive = t < p2_years_to_end
+        
+        # 2. Add active contributions (stops upon retirement or death)
+        p1_inflow = p1_total_annual_contrib if (t < p1_retire_years and p1_alive) else 0.0
+        p2_inflow = p2_total_annual_contrib if (t < p2_retire_years and p2_alive) else 0.0
         balance += (p1_inflow + p2_inflow)
         
-        # 2. Apply annual investment return
+        # 3. Apply investment returns
         balance *= (1 + annual_returns[t])
         
-        # 3. Apply retirement withdrawals (begins when either partner retires)
+        # 4. Spending and Social Security with survivor rules
         if t >= min(p1_retire_years, p2_retire_years):
-            spending = annual_spending * inflation_factor
-            p1_ss = (p1_ss_annual * inflation_factor) if t >= p1_ss_years else 0.0
-            p2_ss = (p2_ss_annual * inflation_factor) if t >= p2_ss_years else 0.0
-            
-            net_draw = spending - (p1_ss + p2_ss)
+            if p1_alive and p2_alive:
+                base_spending = annual_spending
+                ss_p1 = (p1_ss_annual * inflation_factor) if t >= p1_ss_years else 0.0
+                ss_p2 = (p2_ss_annual * inflation_factor) if t >= p2_ss_years else 0.0
+                total_ss = ss_p1 + ss_p2
+            elif p1_alive and not p2_alive:
+                base_spending = annual_spending * survivor_spending_pct
+                # Surviving partner receives the higher of the two benefits
+                ss_p1_base = p1_ss_annual if t >= p1_ss_years else 0.0
+                ss_survivor_base = max(ss_p1_base, p2_ss_annual)
+                total_ss = ss_survivor_base * inflation_factor
+            elif p2_alive and not p1_alive:
+                base_spending = annual_spending * survivor_spending_pct
+                ss_p2_base = p2_ss_annual if t >= p2_ss_years else 0.0
+                ss_survivor_base = max(ss_p2_base, p1_ss_annual)
+                total_ss = ss_survivor_base * inflation_factor
+            else:
+                base_spending = 0.0
+                total_ss = 0.0
+                
+            spending = base_spending * inflation_factor
+            net_draw = spending - total_ss
             if net_draw > 0:
                 balance -= net_draw
                 
@@ -183,13 +209,13 @@ col3.metric(
     delta="Strong" if success_rate >= 85 else ("Moderate" if success_rate >= 70 else "At Risk"),
     delta_color="normal" if success_rate >= 85 else "inverse"
 )
-col4.metric("Combined Social Security", f"${(p1_ss_annual + p2_ss_annual):,.0f}/yr")
+col4.metric("Plan Horizon Length", f"{sim_years} Years")
 
 st.markdown("---")
 
 percentiles = [10, 25, 50, 75, 90]
 percentile_curves = np.percentile(portfolio_paths, percentiles, axis=1)
-years_index = np.arange(SIM_YEARS + 1)
+years_index = np.arange(sim_years + 1)
 
 fig = go.Figure()
 fig.add_trace(go.Scatter(x=years_index, y=percentile_curves[4], name="90th Percentile (Optimistic)", line=dict(color="#2ca02c", dash="dot")))
@@ -197,7 +223,7 @@ fig.add_trace(go.Scatter(x=years_index, y=percentile_curves[2], name="50th Perce
 fig.add_trace(go.Scatter(x=years_index, y=percentile_curves[0], name="10th Percentile (Pessimistic)", line=dict(color="#d62728", dash="dash")))
 
 fig.update_layout(
-    title="Portfolio Balance Trajectories (Next 35 Years)",
+    title=f"Portfolio Trajectories to Final Planning Age ({sim_years} Years)",
     xaxis_title="Years from Today",
     yaxis_title="Portfolio Balance ($)",
     hovermode="x unified",
@@ -205,23 +231,26 @@ fig.update_layout(
 )
 st.plotly_chart(fig, use_container_width=True)
 
+# Build milestones dynamically based on retirement and death milestones
 milestone_years = sorted(list(set([
     0,
     int(round(p1_retire_years)),
     int(round(p1_ss_years)),
     int(round(p2_retire_years)),
     int(round(p2_ss_years)),
-    SIM_YEARS
+    int(round(p1_years_to_end)),
+    int(round(p2_years_to_end)),
+    sim_years
 ])))
-milestone_years = [y for y in milestone_years if y <= SIM_YEARS]
+milestone_years = [y for y in milestone_years if 0 <= y <= sim_years]
 
 df = pd.DataFrame(
     percentile_curves.T,
     index=years_index,
     columns=[f"p{p}" for p in percentiles]
 )
-df["P1 Age"] = np.round(p1_current_age + years_index, 1)
-df["P2 Age"] = np.round(p2_current_age + years_index, 1)
+df["P1 Age"] = np.clip(np.round(p1_current_age + years_index, 1), a_min=None, a_max=float(p1_plan_age))
+df["P2 Age"] = np.clip(np.round(p2_current_age + years_index, 1), a_min=None, a_max=float(p2_plan_age))
 
 summary_table = df.loc[milestone_years, ["P1 Age", "P2 Age", "p10", "p50", "p90"]].copy()
 summary_table.rename(columns={
@@ -233,5 +262,5 @@ summary_table.rename(columns={
 for col in ["10th %ile ($)", "Median ($)", "90th %ile ($)"]:
     summary_table[col] = summary_table[col].map(lambda x: f"${x:,.0f}")
 
-st.subheader("Key Milestone Balances")
+st.subheader("Key Milestone Balances Across Lifespan")
 st.dataframe(summary_table.reset_index(drop=True), use_container_width=True)
